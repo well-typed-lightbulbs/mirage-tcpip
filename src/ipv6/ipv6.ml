@@ -107,7 +107,7 @@ module Make (E : Mirage_protocols_lwt.ETHIF)
     Lwt.return_unit
 
   let checksum = Ndpv6.checksum
-
+ 
   let src t ~dst = Ndpv6.select_source t.ctx dst
 
   let set_ip t ip =
@@ -120,9 +120,6 @@ module Make (E : Mirage_protocols_lwt.ETHIF)
         Lwt.return_unit
       ) bufs
 
-  let get_ip t =
-    Ndpv6.get_ip t.ctx
-
   let set_ip_gateways t ips =
     let now = C.elapsed_ns t.clock in
     let ctx = Ndpv6.add_routers ~now t.ctx ips in
@@ -134,6 +131,28 @@ module Make (E : Mirage_protocols_lwt.ETHIF)
     let ctx = Ndpv6.add_prefix ~now t.ctx pfx in
     t.ctx <- ctx;
     Lwt.return_unit
+    
+  let get_ip t =
+    Ndpv6.get_ip t.ctx
+
+  let get_network t = 
+    Ndpv6.get_prefix t.ctx
+  
+  let get_gateway t = 
+    Ndpv6.get_routers t.ctx
+   
+  let set_config ?ip ?network ?gateway t = 
+    match ip with
+      | None -> Lwt.return_unit
+      | Some ip -> set_ip t ip
+    >>= fun _ -> 
+    match network with 
+      | None -> Lwt.return_unit
+      | Some network -> set_ip_netmask t network
+    >>= fun _ ->
+    match gateway with
+      | None | Some None -> Lwt.return_unit
+      | Some Some gateway-> set_ip_gateways t [gateway]
 
   let pseudoheader t ~dst ~proto len =
     let ph = Cstruct.create (16 + 16 + 8) in

@@ -40,7 +40,7 @@ module Make(Ethif: Mirage_protocols_lwt.ETHIF) (Arpv4 : Mirage_protocols_lwt.ARP
     ethif : Ethif.t;
     arp : Arpv4.t;
     mutable ip: Ipaddr.V4.t;
-    network: Ipaddr.V4.Prefix.t;
+    mutable network: Ipaddr.V4.Prefix.t;
     mutable gateway: Ipaddr.V4.t option;
   }
 
@@ -117,7 +117,24 @@ module Make(Ethif: Mirage_protocols_lwt.ETHIF) (Arpv4 : Mirage_protocols_lwt.ARP
     Arpv4.set_ips t.arp [ip]
 
   let get_ip t = [t.ip]
-
+  let get_network t = [t.network]
+  let get_gateway t = match t.gateway with
+    | None -> []
+    | Some gateway -> [gateway]
+  
+  let set_config ?ip ?network ?gateway t = 
+    match ip with
+      | None -> Lwt.return_unit
+      | Some ip -> set_ip t ip
+    >>= fun _ -> 
+    match network with 
+      | None -> Lwt.return_unit
+      | Some network -> t.network <- network; Lwt.return_unit
+    >>= fun _ ->
+    match gateway with
+      | None -> Lwt.return_unit
+      | Some gateway -> t.gateway <- gateway; Lwt.return_unit
+ 
   let pseudoheader t ~dst ~proto len =
     Ipv4_packet.Marshal.pseudoheader ~src:t.ip ~dst ~proto len
 

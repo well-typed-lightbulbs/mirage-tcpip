@@ -150,13 +150,13 @@ let compute_reachable_time r reachable_time =
 let cksum_buf =
   let pbuf = Io_page.to_cstruct (Io_page.get 1) in
   Cstruct.set_len pbuf 8
-
+ 
 let checksum' ~proto frame bufs =
   Cstruct.BE.set_uint32 cksum_buf 0 (Int32.of_int (Cstruct.lenv bufs));
   Cstruct.BE.set_uint32 cksum_buf 4 (Int32.of_int proto);
   let src_dst = Cstruct.sub frame 8 (2 * 16) in
   Tcpip_checksum.ones_complement_list (src_dst :: cksum_buf :: bufs)
-
+ 
 let checksum frame bufs =
   let frame = Cstruct.shift frame Ethif_wire.sizeof_ethernet in
   let proto = Ipv6_wire.get_ipv6_nhdr frame in
